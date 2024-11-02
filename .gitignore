@@ -1,0 +1,12 @@
+__pycache__/
+*.csv
+*.xlsx
+*.sav
+*.iml
+*.xml
+*.png
+*.svg
+*.eps
+*.zip
+*.z7
+*.h5
