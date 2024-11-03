@@ -69,10 +69,8 @@ float_columns = ['PupilDiameter', 'LeftPupilDiameter', 'RightPupilDiameter',
 
 def getTimeInterval(timestamp, ch_first_timestamp, ch_last_timestamp):
 
-    if timestamp < ch_first_timestamp:
+    if (timestamp < ch_first_timestamp) or (timestamp >= ch_last_timestamp):
         return 0
-    if timestamp >= ch_last_timestamp:
-        return -1
     return math.trunc((timestamp - ch_first_timestamp)/TIME_INTERVAL_DURATION) + 1
 
 
@@ -129,7 +127,10 @@ for atco in filenames:
         print("Number of NaN values in Fixation after propagation:", nan_count)
 
         nan_count = df['Blink'].isna().sum()
-        print("Number of NaN values in Blink after propagation:", nan_count)        
+        print("Number of NaN values in Blink after propagation:", nan_count)
+        
+        total_nan_count = df.isna().sum().sum()
+        print("Total number of NaN values in DataFrame after all methods: ", total_nan_count)
  
         #negative_count = df['LeftBlinkOpeningAmplitude'].lt(0).sum()
         #print(negative_count)
@@ -156,7 +157,6 @@ for atco in filenames:
                                       axis=1) 
                        
         df = df[df['timeInterval']!=0]
-        df = df[df['timeInterval']!=-1]
         
         timeIntervals = set(df['timeInterval'].tolist())
         number_of_time_intervals = len(timeIntervals)
@@ -193,11 +193,13 @@ for atco in filenames:
             ti_df = df[df['timeInterval']==ti]
             
             if ti_df.empty:
+                print(f"ti_df.empty, ti: {ti}")
                 continue
             
             ti_df = ti_df.dropna()
             
             if ti_df.empty:
+                print(f"ti_df.dropna().empty, ti: {ti}")
                 continue            
             
             ti_saccades_df = ti_df[ti_df['Saccade']!=0]
@@ -360,12 +362,12 @@ for atco in filenames:
         # All other columns are processed before (so, no NaNs)
         num_rows = len(df)
         print(f"NUmber of rows before: {num_rows}")
-        #df.interpolate(method='linear', limit_direction='both', axis=0, inplace=True)
+        df.interpolate(method='linear', limit_direction='both', axis=0, inplace=True)
         # Just for the first and end rows
-        #df = df.fillna(method='ffill')
-        #df = df.fillna(method='bfill')
-        # If NaN values in stat features of Saccade, Fixation or Blink, drop these rows
-        df = df.dropna()
+        df = df.fillna(method='ffill')
+        df = df.fillna(method='bfill')
+        # Alternatively: if NaN values in stat features of Saccade, Fixation or Blink, drop these rows
+        #df = df.dropna()
         num_rows = len(df)
         print(f"NUmber of rows after: {num_rows}")
         
