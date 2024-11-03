@@ -70,10 +70,21 @@ def get_TS_np(features):
     print("Reading EEG data")
     full_filename = os.path.join(EEG_DIR, "EEG_all_" + str(TIME_INTERVAL_DURATION) + ".csv")
     eeg_df = pd.read_csv(full_filename, sep=' ')
+    
+    
+    original_row_count = len(eeg_df)
+    eeg_df = eeg_df.dropna()
+    
+    rows_dropped = original_row_count - len(eeg_df)
+    print(f"Number of eeg_df rows dropped: {rows_dropped}")
   
     dim1_idx = 0
+    ti_count = 0
 
+    eeg_ti_empty_count = 0
+    eeg_ti_WLMean_NA_count = 0
     for atco_num in range(1,19):
+    #for atco_num in range(5,6):
 
         print(f"ATCO: {atco_num}")
 
@@ -84,35 +95,50 @@ def get_TS_np(features):
             continue
         
         for run in range(1,4):
+        #for run in range(3,4):
             et_run_df = et_atco_df[et_atco_df['Run']==run]
             eeg_run_df = eeg_atco_df[eeg_atco_df['Run']==run]
             
-            if et_run_df.empty or eeg_run_df.empty:
+            if et_run_df.empty:
+                print("et_run_df.empty, continue")
                 continue
-        
-            number_of_time_intervals = len(eeg_run_df['timeInterval'].tolist())
-        
+
+            if eeg_run_df.empty:
+                print("eeg_run_df.empty, continue")
+                continue
+            
+            number_of_et_time_intervals = max(et_run_df['timeInterval'].tolist())
+            print(f"Number of et time intervals: {number_of_et_time_intervals}")
+            
+            number_of_eeg_time_intervals = max(eeg_run_df['timeInterval'].tolist())
+            print(f"Number of eeg time intervals: {number_of_eeg_time_intervals}")
+            
+            number_of_time_intervals = min(number_of_eeg_time_intervals, number_of_et_time_intervals)
+            print(f"Number of time intervals: {number_of_time_intervals}")
+            
             run_TS_np = np.zeros(shape=(number_of_time_intervals, window_size, number_of_features))
             run_WL_scores = []
             run_Vig_scores = []
             run_Stress_scores = []
             
-            print(number_of_time_intervals)
+            print(f"Number of time intervals: {number_of_time_intervals}")
             dim1_idx = 0
             for ti in range(1, number_of_time_intervals+1):
                 et_ti_df = et_run_df[et_run_df['timeInterval']==ti]
                 eeg_ti_df = eeg_run_df[eeg_run_df['timeInterval']==ti]
                 
-                if eeg_ti_df.empty:
+                if et_ti_df.empty:
+                    print(f"et_ti_df.empty, continue, ti: {ti}")
                     continue
                 
-                ti_WL_score_lst = eeg_ti_df['WorkloadMean'].tolist()
-                ti_Vig_score_lst = eeg_ti_df['VigilanceMean'].tolist()
-                ti_Stress_score_lst = eeg_ti_df['StressMean'].tolist()
-                               
-                ti_WL_score = ti_WL_score_lst[0]
-                ti_Vig_score = ti_Vig_score_lst[0]
-                ti_Stress_score = ti_Stress_score_lst[0]
+                if eeg_ti_df.empty or eeg_ti_df.dropna().empty:
+                    eeg_ti_empty_count = eeg_ti_empty_count + 1
+                    print(f"eeg_ti_df.empty or eeg_ti_df.dropna().empty, continue, ti: {ti}")
+                    continue
+
+                ti_WL_score = eeg_ti_df.iloc[0]['WorkloadMean']
+                ti_Vig_score = eeg_ti_df.iloc[0]['VigilanceMean']
+                ti_Stress_score =eeg_ti_df.iloc[0]['StressMean']
                 
                 dim2_idx = 0
                 for index, row in et_ti_df.iterrows():
@@ -127,24 +153,42 @@ def get_TS_np(features):
                         
                 dim1_idx = dim1_idx + 1
                 
+            # dim1_idx - number of time intervals without NaN values
+            # > dim1_idx are reserved (to speed up computation) but not used,
+            # so remove empty rows
             if dim1_idx < number_of_time_intervals:
                 run_TS_np = run_TS_np[:dim1_idx]
                 
+            run_TS_np_shape = run_TS_np.shape
+            print(f"run_TS_np.shape: {run_TS_np_shape}")
+            
+            ti_count = ti_count + run_TS_np_shape[0]
+            print(f"ti_count: {ti_count}")
+            
             TS_np = np.append(TS_np, run_TS_np, axis=0)
+            
+            TS_np_shape = TS_np.shape
+            print(f"TS_np.shape: {TS_np_shape}")
+            
             all_WL_scores.extend(run_WL_scores)
             all_Vig_scores.extend(run_Vig_scores)
             all_Stress_scores.extend(run_Stress_scores)
+            
+            
+    print(f"eeg_ti_empty_count: {eeg_ti_empty_count}")
+    print(f"eeg_ti_WLMean_NA_count: {eeg_ti_WLMean_NA_count}")
 
     all_scores = np.array((all_WL_scores, all_Vig_scores, all_Stress_scores))
     return (TS_np, all_scores)
 
 (TS_np, scores) = get_TS_np(features)
 
-#print(np.isnan(TS_np).any())
+print(f"Dataframe contains NaNs: {np.isnan(TS_np).any()}")
 
-print(TS_np.shape) # 60 -> (1731, 15000, 38), (1758, 15000, 38)
+print(TS_np.shape) # 60 -> (1767, 15000, 38)
 
 print(len(scores))
+
 
 # Reshape the 3D array to 2D
 TS_np_reshaped = TS_np.reshape(TS_np.shape[0], -1)

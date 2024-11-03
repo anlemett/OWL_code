@@ -38,7 +38,7 @@ filenames = ["D1r1", "D1r2", "D1r3",
              "D9r4", "D9r5", "D9r6"
              ]
 
-#filenames = ["D1r1", "D1r2", "D1r3"]
+#filenames = ["D3r3"]
 
 for filename in filenames:
     print(filename)
@@ -54,6 +54,7 @@ for filename in filenames:
     
     print(first_timestamp)
     print(last_timestamp)
+    print(last_timestamp-first_timestamp)
     
     new_df = pd.DataFrame(columns=['UnixTimestamp', 'workload', 'vigilance', 'stress'])
 
@@ -62,10 +63,12 @@ for filename in filenames:
         ts_df = df[df['UnixTimestamp']==ts]
  
         if ts_df.empty:
-            print(filename + ": empty second")
-            eeg_wl_av = np.nan
-            eeg_vig_av = np.nan
-            eeg_stress_av = np.nan
+            #print(filename + ": empty second")
+            #Both methods work: either skip the data or keep as np.nan
+            continue
+            #eeg_wl_av = np.nan
+            #eeg_vig_av = np.nan
+            #eeg_stress_av = np.nan
 
         else:
             eeg_wl_av = mean(ts_df['workload'].tolist())

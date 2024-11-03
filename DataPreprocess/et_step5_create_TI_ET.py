@@ -158,8 +158,7 @@ for atco in filenames:
                        
         df = df[df['timeInterval']!=0]
         
-        timeIntervals = set(df['timeInterval'].tolist())
-        number_of_time_intervals = len(timeIntervals)
+        number_of_time_intervals = max(df['timeInterval'].tolist())
                         
         SaccadesNumber = []
         SaccadesDurationMean = []

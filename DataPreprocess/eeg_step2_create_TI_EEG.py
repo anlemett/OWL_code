@@ -36,12 +36,11 @@ filenames = [["D1r1", "D1r2", "D1r3"],
              ["D9r4", "D9r5", "D9r6"]
              ]
 
+#filenames = [["D3r3"]]
 
 def getTimeInterval(timestamp, ch_first_timestamp, ch_last_timestamp):
 
-    if timestamp < ch_first_timestamp:
-        return 0
-    if timestamp >= ch_last_timestamp:
+    if (timestamp < ch_first_timestamp) or (timestamp >= ch_last_timestamp):
         return 0
     return math.trunc((timestamp - ch_first_timestamp)/TIME_INTERVAL_DURATION) + 1
 
@@ -69,17 +68,20 @@ for atco in filenames:
         
         ch_first_timestamp = scores_df['timestamp'].loc[0]
         ch_last_timestamp = scores_df['timestamp'].tolist()[-1]
+        
+        print(ch_last_timestamp-ch_first_timestamp)
 
         df['timeInterval'] = df.apply(lambda row: getTimeInterval(row['UnixTimestamp'],
                                                                   ch_first_timestamp,
                                                                   ch_last_timestamp
                                                                   ),
                                       axis=1) 
-
+        
         df = df[df['timeInterval']!=0]
         
-        eeg_timeintervals = set(df['timeInterval'].tolist())
-        number_of_time_intervals = len(eeg_timeintervals)
+        number_of_time_intervals = max(df['timeInterval'].tolist())
+        
+        print(f"Number of time intervals: {number_of_time_intervals}")
         
         for ti in range (1, number_of_time_intervals + 1):
             ti_df = df[df['timeInterval']==ti]
@@ -114,8 +116,6 @@ print("Number of NaN values in VigilanceMean:", nan_count)
 
 nan_count = ML_df['StressMean'].isna().sum()
 print("Number of NaN values in StressMean:", nan_count)
-
-ML_df = ML_df.dropna()
 
 full_filename = os.path.join(OUTPUT_DIR, "EEG_all_" + str (TIME_INTERVAL_DURATION) + ".csv")
 ML_df.to_csv(full_filename, sep=' ', encoding='utf-8', index = False, header = True)

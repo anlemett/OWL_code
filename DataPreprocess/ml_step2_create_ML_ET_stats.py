@@ -102,10 +102,9 @@ def main():
     
     # Reshape the 2D array back to its original 3D shape
     # (number_of_timeintervals, TIME_INTERVAL_DURATION*250, number_of_features)
-    # 60 -> (1731, 15000, 38), 180 -> (667, 45000, 38)
+    # 60 -> (1767, 15000, 38), 180 -> (667, 45000, 38)
     if TIME_INTERVAL_DURATION == 60:
-        #TS_np = TS_np.reshape((1731, 15000, 38))
-        TS_np = TS_np.reshape((1758, 15000, 38))
+        TS_np = TS_np.reshape((1767, 15000, 38))
     else:
         TS_np = TS_np.reshape((667, 45000, 38))
     
