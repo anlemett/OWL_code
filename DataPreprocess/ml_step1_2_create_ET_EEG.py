@@ -73,7 +73,6 @@ def get_TS_np(features):
     
     
     original_row_count = len(eeg_df)
-    eeg_df = eeg_df.dropna()
     
     rows_dropped = original_row_count - len(eeg_df)
     print(f"Number of eeg_df rows dropped: {rows_dropped}")
@@ -84,7 +83,6 @@ def get_TS_np(features):
     eeg_ti_empty_count = 0
     eeg_ti_WLMean_NA_count = 0
     for atco_num in range(1,19):
-    #for atco_num in range(5,6):
 
         print(f"ATCO: {atco_num}")
 
@@ -95,7 +93,6 @@ def get_TS_np(features):
             continue
         
         for run in range(1,4):
-        #for run in range(3,4):
             et_run_df = et_atco_df[et_atco_df['Run']==run]
             eeg_run_df = eeg_atco_df[eeg_atco_df['Run']==run]
             
@@ -185,7 +182,7 @@ def get_TS_np(features):
 
 print(f"Dataframe contains NaNs: {np.isnan(TS_np).any()}")
 
-print(TS_np.shape) # 60 -> (1767, 15000, 38)
+print(TS_np.shape) # 60 -> (1811, 15000, 38)
 
 print(len(scores))
 

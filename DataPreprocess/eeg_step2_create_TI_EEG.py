@@ -117,5 +117,24 @@ print("Number of NaN values in VigilanceMean:", nan_count)
 nan_count = ML_df['StressMean'].isna().sum()
 print("Number of NaN values in StressMean:", nan_count)
 
+
+#new_df = ML_df.dropna()
+
+new_df = pd.DataFrame()
+for atco_num in range(1,19):
+    
+    atco_df = ML_df[ML_df['ATCO']==atco_num]
+    
+    for run in range(1,4):
+        
+        run_df = atco_df[atco_df['ATCO']==run]
+        
+        run_df.interpolate(method='linear', limit_direction='both', axis=0, inplace=True)
+        # Just for the first and end rows
+        run_df = run_df.fillna(method='ffill')
+        run_df = run_df.fillna(method='bfill')
+        
+        new_df = pd.concat([new_df, run_df], ignore_index=True)
+
 full_filename = os.path.join(OUTPUT_DIR, "EEG_all_" + str (TIME_INTERVAL_DURATION) + ".csv")
-ML_df.to_csv(full_filename, sep=' ', encoding='utf-8', index = False, header = True)
+new_df.to_csv(full_filename, sep=' ', encoding='utf-8', index = False, header = True)

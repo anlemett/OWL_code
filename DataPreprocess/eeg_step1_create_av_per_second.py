@@ -64,11 +64,9 @@ for filename in filenames:
  
         if ts_df.empty:
             #print(filename + ": empty second")
-            #Both methods work: either skip the data or keep as np.nan
-            continue
-            #eeg_wl_av = np.nan
-            #eeg_vig_av = np.nan
-            #eeg_stress_av = np.nan
+            eeg_wl_av = np.nan
+            eeg_vig_av = np.nan
+            eeg_stress_av = np.nan
 
         else:
             eeg_wl_av = mean(ts_df['workload'].tolist())

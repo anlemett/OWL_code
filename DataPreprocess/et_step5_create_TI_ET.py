@@ -94,7 +94,7 @@ for atco in filenames:
         
         total_nan_count = df.isna().sum().sum()
         print("Total number of NaN values in DataFrame before interpolation: ", total_nan_count)
-            
+
         df[float_columns] = df[float_columns].interpolate(method='linear', limit_direction='both', axis=0)
         df[float_columns] = df[float_columns].fillna(method='bfill')
         df[float_columns] = df[float_columns].fillna(method='ffill')
@@ -113,13 +113,13 @@ for atco in filenames:
         
         # Fill NaN values with forward propagation (0 or the number of Saccade/Fixation/Blink)
         # Backward propagation is just for the first rows
-        df[['Saccade']] = df[['Saccade']].fillna(method='bfill')
         df[['Saccade']] = df[['Saccade']].fillna(method='ffill')
-        df[['Fixation']] = df[['Fixation']].fillna(method='bfill')
+        df[['Saccade']] = df[['Saccade']].fillna(method='bfill')
         df[['Fixation']] = df[['Fixation']].fillna(method='ffill')
-        df[['Blink']] = df[['Blink']].fillna(method='bfill')
+        df[['Fixation']] = df[['Fixation']].fillna(method='bfill')
         df[['Blink']] = df[['Blink']].fillna(method='ffill')
-                
+        df[['Blink']] = df[['Blink']].fillna(method='bfill')
+
         nan_count = df['Saccade'].isna().sum()
         print("Number of NaN values in Saccade after propagation:", nan_count)
 
@@ -361,17 +361,23 @@ for atco in filenames:
         # All other columns are processed before (so, no NaNs)
         num_rows = len(df)
         print(f"NUmber of rows before: {num_rows}")
-        df.interpolate(method='linear', limit_direction='both', axis=0, inplace=True)
+        #df.interpolate(method='linear', limit_direction='both', axis=0, inplace=True)
         # Just for the first and end rows
-        df = df.fillna(method='ffill')
-        df = df.fillna(method='bfill')
+        #df = df.fillna(method='ffill')
+        #df = df.fillna(method='bfill')
+        
+        # Fill NaN values with the minimum of each column
+        #df = df.apply(lambda x: x.fillna(x.min()), axis=0)
+        
+        # Fill NaN values with the mean of each column
+        #df = df.apply(lambda x: x.fillna(x.mean()), axis=0)
+
         # Alternatively: if NaN values in stat features of Saccade, Fixation or Blink, drop these rows
-        #df = df.dropna()
+        df = df.dropna()
         num_rows = len(df)
         print(f"NUmber of rows after: {num_rows}")
         
         row_num = len(df.index)
-        #df['ATCO'] = [filename[-2:]] * row_num
         df['ATCO'] = [atco_num] * row_num
         df['Run'] = [run] * row_num
         run = run + 1    
@@ -381,20 +387,6 @@ for atco in filenames:
         df = df[columns]
         
         atco_df = pd.concat([atco_df, df], ignore_index=True)
-    
-    #####################################
-    # Normalization per ATCO 
-    # might cause data leakage
-    '''
-    scaler = preprocessing.MinMaxScaler()
-
-    for feature in new_features:
-        feature_lst = atco_df[feature].tolist()
-        scaled_feature_lst = scaler.fit_transform(np.asarray(feature_lst).reshape(-1, 1))
-        atco_df = atco_df.drop(feature, axis = 1)
-        atco_df[feature] = scaled_feature_lst
-    '''
-    #####################################
     
     TI_df = pd.concat([TI_df, atco_df], ignore_index=True)
 

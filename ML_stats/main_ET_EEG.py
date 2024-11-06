@@ -16,7 +16,10 @@ from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassif
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, f1_score
 
-from features import init, init_blinks, init_quantiles, init_blinks_quantiles
+from features import init, init_blinks, init_blinks_quantiles
+from features import init_blinks_diam, init_blinks_diam_quantiles
+from features import init_quantiles
+from features import init_blinks_no_head, init_blinks_no_head_quantiles
 from features import init_blinks_without_diam, saccade_fixation_blinks
 from features import saccade_fixation_blinks_head, init_blinks_without_head, blinks
 from features import blinks_quantiles, blinks_left, blinks_right, left, right
@@ -24,9 +27,13 @@ from features import init_blinks_mean, init_blinks_median, init_blinks_sd
 from features import init_blinks_min, init_blinks_max, init_blinks_mean_median
 from features import init_blinks_number
 
-columns_to_select = init
+#columns_to_select = init
+columns_to_select = init_blinks_no_head
+#columns_to_select = init_blinks_no_head_quantiles
 #columns_to_select = init_blinks
+#columns_to_select = init_blinks_diam
 #columns_to_select = init_blinks_quantiles
+#columns_to_select = init_blinks_diam_quantiles
 #columns_to_select = init_blinks_number
 #columns_to_select = init_blinks_mean
 #columns_to_select = init_blinks_median
@@ -49,16 +56,16 @@ ML_DIR = os.path.join(DATA_DIR, "MLInput")
 #ML_DIR = os.path.join(DATA_DIR, "MLInput_Journal")
 FIG_DIR = os.path.join(".", "Figures")
 
-RANDOM_STATE = 0
+#RANDOM_STATE = 0
 
-BINARY = False
+BINARY = True
 EQUAL_PERCENTILES = False
 
 #MODEL = "LR"
 #MODEL = "SVC"
 #MODEL = "DT"
-#MODEL = "RF"
-MODEL = "HGBC"
+MODEL = "RF"
+#MODEL = "HGBC"
 
 N_ITER = 100
 CV = 5
@@ -67,8 +74,6 @@ SCORING = 'f1_macro'
 
 TIME_INTERVAL_DURATION = 60 
 #TIME_INTERVAL_DURATION = 1 # acc=, f1= for init_blink
-
-np.random.seed(RANDOM_STATE)
 
 def weight_classes(scores):
     
@@ -109,6 +114,9 @@ def getEEGThresholds(scores):
 
 
 def main():
+    
+    np.random.seed(RANDOM_STATE)
+    print(f"RANDOM_STATE: {RANDOM_STATE}")
     
     if TIME_INTERVAL_DURATION == 60:
         filename = "ML_features_1min.csv"
@@ -203,13 +211,21 @@ def main():
     scaler = preprocessing.MinMaxScaler()
     scaler.fit(X_train)
     X_train = scaler.transform(X_train)
-       
+    '''
     if  BINARY:
         th = getEEGThreshold(y_train)
         y_train = [1 if score < th else 2 for score in y_train]
     else:
         (th1, th2) = getEEGThresholds(y_train)
         y_train = [1 if score < th1 else 3 if score > th2 else 2 for score in y_train]
+    '''
+    if  BINARY:
+        th = getEEGThreshold(y_train)
+        y_train = [1 if score <= th else 2 for score in y_train]
+    else:
+        (th1, th2) = getEEGThresholds(y_train)
+        y_train = [1 if score <= th1 else 3 if score > th2 else 2 for score in y_train]
+
     
     print("EEG")
     number_of_classes = len(set(y_train))
@@ -310,7 +326,7 @@ def main():
         # Print the best hyperparameters
         print('Best hyperparameters:',  search.best_params_)
         
-    elif  MODEL == "RF": # 0.96, 0.82; 
+    elif  MODEL == "RF":
         clf = RandomForestClassifier(class_weight=weight_dict,
                                      #bootstrap=True,
                                      max_features=None,
@@ -335,9 +351,14 @@ def main():
                                 cv=CV,
                                 n_jobs=-1,
                                 random_state=RANDOM_STATE)
+        print("Before fit")
+        before_fit_time = time.time()
         
         # Fit the search object to the data
         search.fit(X_train, y_train)
+        print("After fit")
+        elapsed_fit_time = time.time() - before_fit_time
+        print(f"Elapsed time: {elapsed_fit_time:.3f} seconds")
  
         # Create a variable for the best model
         best_clf = search.best_estimator_
@@ -345,7 +366,7 @@ def main():
         # Print the best hyperparameters
         print('Best hyperparameters:',  search.best_params_)
         
-    elif  MODEL == "HGBC": # 0.95, 0.83; 
+    elif  MODEL == "HGBC":
         clf = HistGradientBoostingClassifier(class_weight='balanced',
                                              random_state=RANDOM_STATE)
 
@@ -390,7 +411,9 @@ def main():
     
 start_time = time.time()
 
-main()
+
+for RANDOM_STATE in range(0,11):
+    main()
 
 elapsed_time = time.time() - start_time
 print(f"Elapsed time: {elapsed_time:.3f} seconds")
