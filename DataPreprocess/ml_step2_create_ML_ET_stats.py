@@ -10,8 +10,12 @@ DATA_DIR = os.path.join(DATA_DIR, "Data")
 ML_DIR = os.path.join(DATA_DIR, "MLInput")
 FIG_DIR = os.path.join(".", "Figures")
 
-#TIME_INTERVAL_DURATION = 180
-TIME_INTERVAL_DURATION = 60
+CHS = True
+
+TIME_INTERVAL_DURATION = 180
+#TIME_INTERVAL_DURATION = 60
+#TIME_INTERVAL_DURATION = 30
+#TIME_INTERVAL_DURATION = 1
 
 saccade_fixation_blink = [
             'Saccades Number',
@@ -90,10 +94,10 @@ def featurize_data(x_data):
 
 def main():
     
-    if TIME_INTERVAL_DURATION == 60:
-        full_filename = os.path.join(ML_DIR, "ML_ET_EEG_" + str(TIME_INTERVAL_DURATION) + "__ET.csv")
-    else:
+    if CHS:
         full_filename = os.path.join(ML_DIR, "ML_ET_CH__ET.csv")
+    else:
+        full_filename = os.path.join(ML_DIR, "ML_ET_EEG_" + str(TIME_INTERVAL_DURATION) + "__ET.csv")
         
     print("reading data")
 
@@ -102,21 +106,30 @@ def main():
     
     # Reshape the 2D array back to its original 3D shape
     # (number_of_timeintervals, TIME_INTERVAL_DURATION*250, number_of_features)
-    # 60 -> (1811, 15000, 38), 180 -> (667, 45000, 38)
-    if TIME_INTERVAL_DURATION == 60:
-        TS_np = TS_np.reshape((1811, 15000, 38))
-    else:
+
+    print(TS_np.shape)
+    if CHS:
         TS_np = TS_np.reshape((667, 45000, 38))
+    else:
+        if TIME_INTERVAL_DURATION == 180:
+            TS_np = TS_np.reshape((605, 45000, 38))
+        elif TIME_INTERVAL_DURATION == 60:
+            #TS_np = TS_np.reshape((1766, 15000, 38))
+            TS_np = TS_np.reshape((1811, 15000, 38))
+        elif TIME_INTERVAL_DURATION == 30:
+            TS_np = TS_np.reshape((3616, 7500, 38))
+        #elif TIME_INTERVAL_DURATION == 1:
+        else:
+            TS_np = TS_np.reshape((97731, 250, 38))
     
     X_featurized = featurize_data(TS_np)
     
     data_df = pd.DataFrame.from_records(X_featurized, columns=['ATCO'] + features)
     
-    if TIME_INTERVAL_DURATION == 60:
-        filename = "ML_features_1min.csv"
+    if CHS:
+        filename = "ML_features_CHS.csv"
     else:
-        filename = "ML_features_3min.csv"
-    
+        filename = "ML_features_" + str(TIME_INTERVAL_DURATION) + ".csv"
     
     # Remove features with zero std
     # TODO: check blink duration Min and Median std

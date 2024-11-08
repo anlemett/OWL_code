@@ -58,22 +58,24 @@ FIG_DIR = os.path.join(".", "Figures")
 
 #RANDOM_STATE = 0
 
-BINARY = True
+CHS = True
+BINARY = False
 EQUAL_PERCENTILES = False
 
 #MODEL = "LR"
 #MODEL = "SVC"
 #MODEL = "DT"
-MODEL = "RF"
-#MODEL = "HGBC"
+#MODEL = "RF"
+MODEL = "HGBC"
 
 N_ITER = 100
 CV = 5
 SCORING = 'f1_macro'
 #SCORING = 'accuracy'
 
-TIME_INTERVAL_DURATION = 60 
-#TIME_INTERVAL_DURATION = 1 # acc=, f1= for init_blink
+#TIME_INTERVAL_DURATION = 60 
+#TIME_INTERVAL_DURATION = 1
+TIME_INTERVAL_DURATION = 30
 
 def weight_classes(scores):
     
@@ -118,10 +120,10 @@ def main():
     np.random.seed(RANDOM_STATE)
     print(f"RANDOM_STATE: {RANDOM_STATE}")
     
-    if TIME_INTERVAL_DURATION == 60:
-        filename = "ML_features_1min.csv"
+    if CHS:
+        filename = "ML_features_CHS.csv"
     else:
-        filename = "ML_features_1sec.csv"
+        filename = "ML_features_" + str(TIME_INTERVAL_DURATION) + ".csv"
     
     full_filename = os.path.join(ML_DIR, filename)
     
@@ -129,6 +131,8 @@ def main():
     data_df = data_df.drop('ATCO', axis=1)
     
     data_df = data_df[columns_to_select]
+    
+    features_np = data_df.to_numpy()
     
     '''    
     for i in range(0,17):
@@ -143,37 +147,25 @@ def main():
     
     print(len(data_df.columns))
     
-    '''
-    head_features = [
-        'Head Heading Mean', 'Head Pitch Mean', 'Head Roll Mean',
-        'Head Heading Std', 'Head Pitch Std', 'Head Roll Std',
-        'Head Heading Median', 'Head Pitch Median', 'Head Roll Median',
-        'Head Heading Min', 'Head Pitch Min', 'Head Roll Min',
-        'Head Heading Max', 'Head Pitch Max', 'Head Roll Max']
-    
-    for feature in head_features:
-        data_df = data_df.drop(columns=[feature])
-    
-    print(data_df.columns)
-    '''
+    if CHS:
+        full_filename = os.path.join(ML_DIR, "ML_ET_CH__CH.csv")
+    else:
+        full_filename = os.path.join(ML_DIR, "ML_ET_EEG_" + str(TIME_INTERVAL_DURATION) + "__EEG.csv")
 
-    full_filename = os.path.join(ML_DIR, "ML_ET_EEG_" + str(TIME_INTERVAL_DURATION) + "__EEG.csv")
+    # Do we need this for not CHS?
+    #scores_df = pd.read_csv(full_filename, sep=' ')
+    #scores_np = scores_df.to_numpy()
+    #print(scores_np.shape)
+    
+    scores_np = np.loadtxt(full_filename, delimiter=" ")
 
-    scores_df = pd.read_csv(full_filename, sep=' ')
-    scores_np = scores_df.to_numpy()
-    
-    
-    features_np = data_df.to_numpy()
+    if not CHS:
+        scores_np = scores_np[0,:] # Workload
     
 
     ###########################################################################
     #Shuffle data
-
-    #print(features_np.shape)
-    #print(scores_np.shape)
-    
-    scores_np = scores_np[0,:] # Workload
-    
+        
     # Create a mask to filter out rows where either features_np or scores_np has NaN
     mask = ~(
         np.isnan(features_np).any(axis=1) |  # Check for NaN in any feature
@@ -211,7 +203,7 @@ def main():
     scaler = preprocessing.MinMaxScaler()
     scaler.fit(X_train)
     X_train = scaler.transform(X_train)
-    '''
+    
     if  BINARY:
         th = getEEGThreshold(y_train)
         y_train = [1 if score < th else 2 for score in y_train]
@@ -225,7 +217,7 @@ def main():
     else:
         (th1, th2) = getEEGThresholds(y_train)
         y_train = [1 if score <= th1 else 3 if score > th2 else 2 for score in y_train]
-
+    '''
     
     print("EEG")
     number_of_classes = len(set(y_train))

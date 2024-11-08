@@ -15,8 +15,10 @@ ET_DIR = os.path.join(DATA_DIR, "EyeTracking4")
 CH_DIR = os.path.join(DATA_DIR, "CH0_orig")
 OUTPUT_DIR = os.path.join(DATA_DIR, "EyeTracking5")
 
-#TIME_INTERVAL_DURATION = 180  #sec
-TIME_INTERVAL_DURATION = 60  #sec
+TIME_INTERVAL_DURATION = 180  #sec
+#TIME_INTERVAL_DURATION = 60  #sec
+#TIME_INTERVAL_DURATION = 1  #sec
+#TIME_INTERVAL_DURATION = 30  #sec
 
 filenames = [["D1r1", "D1r2", "D1r3"],
              ["D1r4", "D1r5", "D1r6"],
@@ -94,11 +96,11 @@ for atco in filenames:
         
         total_nan_count = df.isna().sum().sum()
         print("Total number of NaN values in DataFrame before interpolation: ", total_nan_count)
-
+        
         df[float_columns] = df[float_columns].interpolate(method='linear', limit_direction='both', axis=0)
         df[float_columns] = df[float_columns].fillna(method='bfill')
         df[float_columns] = df[float_columns].fillna(method='ffill')
-
+        
         total_nan_count = df.isna().sum().sum()
         print("Total number of NaN values in DataFrame after interpolation: ", total_nan_count)
 
@@ -119,7 +121,7 @@ for atco in filenames:
         df[['Fixation']] = df[['Fixation']].fillna(method='bfill')
         df[['Blink']] = df[['Blink']].fillna(method='ffill')
         df[['Blink']] = df[['Blink']].fillna(method='bfill')
-
+        
         nan_count = df['Saccade'].isna().sum()
         print("Number of NaN values in Saccade after propagation:", nan_count)
 
@@ -366,9 +368,6 @@ for atco in filenames:
         #df = df.fillna(method='ffill')
         #df = df.fillna(method='bfill')
         
-        # Fill NaN values with the minimum of each column
-        #df = df.apply(lambda x: x.fillna(x.min()), axis=0)
-        
         # Fill NaN values with the mean of each column
         #df = df.apply(lambda x: x.fillna(x.mean()), axis=0)
 
@@ -387,7 +386,7 @@ for atco in filenames:
         df = df[columns]
         
         atco_df = pd.concat([atco_df, df], ignore_index=True)
-    
+        
     TI_df = pd.concat([TI_df, atco_df], ignore_index=True)
 
 #print(TI_df.isnull().any().any())

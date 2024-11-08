@@ -14,8 +14,11 @@ ET_DIR = os.path.join(DATA_DIR, "EyeTracking5")
 EEG_DIR = os.path.join(DATA_DIR, "EEG2")
 ML_DIR = os.path.join(DATA_DIR, "MLInput")
 
+TIME_INTERVAL_DURATION = 180
+#TIME_INTERVAL_DURATION = 60
+#TIME_INTERVAL_DURATION = 30
+#TIME_INTERVAL_DURATION = 1
 
-TIME_INTERVAL_DURATION = 60
 WINDOW_SIZE = 250 * TIME_INTERVAL_DURATION
 
 features = [
@@ -73,6 +76,7 @@ def get_TS_np(features):
     
     
     original_row_count = len(eeg_df)
+    #eeg_df = eeg_df.dropna()
     
     rows_dropped = original_row_count - len(eeg_df)
     print(f"Number of eeg_df rows dropped: {rows_dropped}")
@@ -103,6 +107,11 @@ def get_TS_np(features):
             if eeg_run_df.empty:
                 print("eeg_run_df.empty, continue")
                 continue
+            
+            eeg_run_df.interpolate(method='linear', limit_direction='both', axis=0, inplace=True)
+            # Just for the first and end rows
+            eeg_run_df = eeg_run_df.fillna(method='ffill')
+            eeg_run_df = eeg_run_df.fillna(method='bfill')
             
             number_of_et_time_intervals = max(et_run_df['timeInterval'].tolist())
             print(f"Number of et time intervals: {number_of_et_time_intervals}")
@@ -182,13 +191,14 @@ def get_TS_np(features):
 
 print(f"Dataframe contains NaNs: {np.isnan(TS_np).any()}")
 
-print(TS_np.shape) # 60 -> (1811, 15000, 38)
+print(TS_np.shape)
 
 print(len(scores))
 
 
 # Reshape the 3D array to 2D
 TS_np_reshaped = TS_np.reshape(TS_np.shape[0], -1)
+print(TS_np_reshaped.shape)
 
 # Save the 2D array to a CSV file
 full_filename = os.path.join(ML_DIR, "ML_ET_EEG_" + str(TIME_INTERVAL_DURATION) + "__ET.csv")
