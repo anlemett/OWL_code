@@ -39,6 +39,8 @@ RANDOM_STATE = 0
 CHS = False
 BINARY = False
 
+TEST_ATCO = 1
+
 #MODEL = "LR"
 #MODEL = "SVC"
 #MODEL = "RF"
@@ -49,10 +51,10 @@ N_SPLIT = 5
 SCORING = 'f1_macro'
 #SCORING = 'accuracy'
 
-#TIME_INTERVAL_DURATION = 180
+TIME_INTERVAL_DURATION = 180
 #TIME_INTERVAL_DURATION = 60
 #TIME_INTERVAL_DURATION = 30
-TIME_INTERVAL_DURATION = 1
+#TIME_INTERVAL_DURATION = 1
 
 class ThresholdLabelTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, percentiles=None):
@@ -103,91 +105,37 @@ def model_with_tuning(pipeline, X_train, y_train):
     
     # Return the best estimator found in this fold
     return randomized_search.best_estimator_
-
-
-# Cross-validation function that handles the pipeline
-def cross_val_with_label_transform(pipeline, X, y, cv):
-    accuracies = []
-    precisions = []
-    recalls = []
-    f1_scores = []
-    
-    for i, (train_index, test_index) in enumerate(cv.split(X), start=1):
-        
-        print(f"Iteration {i}")
-        
-        X_train, X_test = np.array(X)[train_index], np.array(X)[test_index]
-        y_train, y_test = np.array(y)[train_index], np.array(y)[test_index]
-        
-        pipeline.named_steps['label_transform'].fit(X_train, y_train)  # Fit to compute thresholds
-        _, y_train_transformed = pipeline.named_steps['label_transform'].transform(X_train, y_train)
-        _, y_test_transformed = pipeline.named_steps['label_transform'].transform(X_test, y_test)
-        
-        # Set class weights to the classifier
-        pipeline.named_steps['classifier'].set_params(class_weight='balanced')
-        
-        print("before model_with_tuning")
-        # Get the best model after tuning on the current fold
-        best_model = model_with_tuning(pipeline, X_train, y_train_transformed)
-        print("after model_with_tuning")
-        
-        # Fit the pipeline on transformed y_train
-        best_model.fit(X_train, y_train_transformed)
-        
-        # Predict the labels on the transformed test data
-        y_pred = best_model.predict(X_test)
-        
-        # Calculate the metrics
-        accuracies.append(accuracy_score(y_test_transformed, y_pred))
-        precisions.append(precision_score(y_test_transformed, y_pred, average='macro', zero_division=0))
-        recalls.append(recall_score(y_test_transformed, y_pred, average='macro', zero_division=0))
-        f1_scores.append(f1_score(y_test_transformed, y_pred, average='macro', zero_division=0))
-        
-    # Print the results
-    print(f"Accuracy: {np.mean(accuracies):.4f} ± {np.std(accuracies):.4f}")
-    print(f"Precision: {np.mean(precisions):.4f} ± {np.std(precisions):.4f}")
-    print(f"Recall: {np.mean(recalls):.4f} ± {np.std(recalls):.4f}")
-    print(f"F1-Score: {np.mean(f1_scores):.4f} ± {np.std(f1_scores):.4f}")
     
 
 # Hold-out function that handles the pipeline
-def hold_out_with_label_transform(pipeline, X, y):
+def hold_out_with_label_transform(pipeline, X_train, y_train, X_test, y_test):
 
-    # Spit the data into train and test
-    rs = ShuffleSplit(n_splits=1, test_size=.1, random_state=RANDOM_STATE)
-    
-    for i, (train_idx, test_idx) in enumerate(rs.split(X)):
-        X_train = np.array(X)[train_idx.astype(int)]
-        y_train = np.array(y)[train_idx.astype(int)]
-        X_test = np.array(X)[test_idx.astype(int)]
-        y_test = np.array(y)[test_idx.astype(int)]
-        
-        pipeline.named_steps['label_transform'].fit(X_train, y_train)  # Fit to compute thresholds
-        _, y_train_transformed = pipeline.named_steps['label_transform'].transform(X_train, y_train)
-        _, y_test_transformed = pipeline.named_steps['label_transform'].transform(X_test, y_test)
-        
-        # Set class weights to the classifier
-        pipeline.named_steps['classifier'].set_params(class_weight='balanced')
+    pipeline.named_steps['label_transform'].fit(X_train, y_train)  # Fit to compute thresholds
+    _, y_train_transformed = pipeline.named_steps['label_transform'].transform(X_train, y_train)
+    _, y_test_transformed = pipeline.named_steps['label_transform'].transform(X_test, y_test)
+               
+    # Set class weights to the classifier
+    pipeline.named_steps['classifier'].set_params(class_weight='balanced')
 
-        # Get the best model after tuning on the current fold
-        best_model = model_with_tuning(pipeline, X_train, y_train_transformed)
+    # Get the best model after tuning on the current fold
+    best_model = model_with_tuning(pipeline, X_train, y_train_transformed)
         
-        # Fit the pipeline on transformed y_train
-        best_model.fit(X_train, y_train_transformed)
+    # Fit the pipeline on transformed y_train
+    best_model.fit(X_train, y_train_transformed)
+       
+    # Predict the labels on the transformed test data
+    y_pred = best_model.predict(X_test)
         
-        # Predict the labels on the transformed test data
-        y_pred = best_model.predict(X_test)
-        
-        print("Shape at output after classification:", y_pred.shape)
+    print("Shape at output after classification:", y_pred.shape)
 
-        accuracy = accuracy_score(y_pred=y_pred, y_true=y_test_transformed)
+    accuracy = accuracy_score(y_pred=y_pred, y_true=y_test_transformed)
         
-        f1_macro = f1_score(y_pred=y_pred, y_true=y_test_transformed, average='macro')
+    f1_macro = f1_score(y_pred=y_pred, y_true=y_test_transformed, average='macro')
         
-        print("Accuracy:", accuracy)
-        print("Macro F1-score:", f1_macro)
+    print("Accuracy:", accuracy)
+    print("Macro F1-score:", f1_macro)
         
-
+ 
 def get_model():
     if MODEL == "SVC":
         return SVC()
@@ -195,7 +143,7 @@ def get_model():
         return RandomForestClassifier(random_state=RANDOM_STATE, max_features=None)
     else:
         return HistGradientBoostingClassifier(random_state=RANDOM_STATE)
-
+    
 def get_param_dist():
     if MODEL == "SVC":
         param_dist = {
@@ -225,6 +173,11 @@ def get_percentiles():
     else:
         return [0.52, 0.93]
     
+# Normalize features per ATCO
+def normalize_group(group):
+    scaler = StandardScaler()  # You can use MinMaxScaler() or any other scaler
+    group.iloc[:, 1:] = scaler.fit_transform(group.iloc[:, 1:])
+    return group
 
 
 def main():
@@ -258,30 +211,48 @@ def main():
     
         scores_np = scores_np[0,:] # Workload
     
+
     scores = list(scores_np)
     
-    data_df['score'] = scores
+    if not CHS:
+        data_df['score'] = scores
+    
+    data_df = data_df.groupby('ATCO').apply(normalize_group).reset_index(drop=True)
+    
+    if CHS:
+        data_df['score'] = scores
+    
+    data_df_train = data_df[data_df['ATCO']!=TEST_ATCO]
+    data_df_test = data_df[data_df['ATCO']==TEST_ATCO]
+    
+    scores_train = data_df_train['score'].to_list()
+    scores_test = data_df_test['score'].to_list()
+       
+    data_df_train = data_df_train.drop('ATCO', axis=1)
+    data_df_train = data_df_train.drop('score', axis=1)
+    data_df_test = data_df_test.drop('ATCO', axis=1)
+    data_df_test = data_df_test.drop('score', axis=1)
+    
+    X_train = data_df_train.to_numpy()
+    X_train = np.array(X_train)
+    X_test = data_df_test.to_numpy()
+    X_test = np.array(X_test)
+    
+    y_train = np.array(scores_train)
+    y_test = np.array(scores_test)
+
     
     ###########################################################################
     
-    data_df = data_df[data_df['ATCO']==3]
-    data_df = data_df.drop('ATCO', axis=1)
-    
-    scores = data_df['score'].to_list()
-    data_df = data_df.drop('score', axis=1)
-    
-    X = data_df.to_numpy()
-    y = np.array(scores)
-    
-    zipped = list(zip(X, y))
-    
+    zipped = list(zip(X_train, y_train))
+
     np.random.shuffle(zipped)
-    
-    X, y = zip(*zipped)
-    
-    X = np.array(X)
-    y = np.array(y)
-    
+
+    X_train, y_train = zip(*zipped)
+
+    X_train = np.array(X_train)
+    y_train = np.array(y_train)
+   
     pipeline = Pipeline([
             # Step 1: Standardize features
             ('scaler', StandardScaler()),
@@ -290,15 +261,11 @@ def main():
             # Step 3: Choose the model
             ('classifier', get_model())
             ])
-    
-    
-    # Initialize the cross-validation splitter
-    #outer_cv = KFold(n_splits=10, shuffle=True, random_state=RANDOM_STATE)
-    #cross_val_with_label_transform(pipeline, X, y, cv=outer_cv)
-    
-    hold_out_with_label_transform(pipeline, X, y)
+        
+    hold_out_with_label_transform(pipeline, X_train, y_train, X_test, y_test)
+            
 
-
+    
 start_time = time.time()
 
 main()
