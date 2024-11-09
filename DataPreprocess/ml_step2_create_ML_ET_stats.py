@@ -10,7 +10,7 @@ DATA_DIR = os.path.join(DATA_DIR, "Data")
 ML_DIR = os.path.join(DATA_DIR, "MLInput")
 FIG_DIR = os.path.join(".", "Figures")
 
-CHS = True
+CHS = False
 
 #TIME_INTERVAL_DURATION = 180
 #TIME_INTERVAL_DURATION = 60
@@ -119,7 +119,8 @@ def main():
             TS_np = TS_np.reshape((1811, 15000, 38))
         elif TIME_INTERVAL_DURATION == 30:
             TS_np = TS_np.reshape((3616, 7500, 38))
-        #elif TIME_INTERVAL_DURATION == 1:
+        elif TIME_INTERVAL_DURATION == 10:
+            TS_np = TS_np.reshape((10759, 2500, 38))
         else:
             TS_np = TS_np.reshape((97731, 250, 38))
     
@@ -132,9 +133,6 @@ def main():
     else:
         filename = "ML_features_" + str(TIME_INTERVAL_DURATION) + ".csv"
     
-    # Remove features with zero std
-    # TODO: check blink duration Min and Median std
-
     features_to_remove = ["Saccades Duration Min", "Fixation Duration Min",
                           "Left Blink Closing Amplitude Min",
                           "Left Blink Opening Amplitude Min",

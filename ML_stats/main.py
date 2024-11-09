@@ -45,14 +45,15 @@ BINARY = False
 MODEL = "HGBC"
 
 N_ITER = 100
-N_SPLIT = 5
+N_SPLIT = 10
 SCORING = 'f1_macro'
 #SCORING = 'accuracy'
 
 #TIME_INTERVAL_DURATION = 180
 #TIME_INTERVAL_DURATION = 60
 #TIME_INTERVAL_DURATION = 30
-TIME_INTERVAL_DURATION = 1
+TIME_INTERVAL_DURATION = 10
+#TIME_INTERVAL_DURATION = 1
 
 class ThresholdLabelTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, percentiles=None):
