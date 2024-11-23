@@ -271,6 +271,17 @@ right = [
   "Right Blink Closing Speed Max", "Right Blink Opening Speed Max",
   ]
 
+average = [
+  "Pupil Diameter Mean", "Pupil Diameter Std",
+  "Pupil Diameter Median", "Pupil Diameter Min", "Pupil Diameter Max",
+  "Blink Closing Amplitude Mean", "Blink Opening Amplitude Mean",
+  "Blink Closing Speed Mean", "Blink Opening Speed Mean",
+  "Blink Closing Amplitude Std", "Blink Opening Amplitude Std", 
+  "Blink Closing Speed Std", "Blink Opening Speed Std",
+  "Blink Closing Amplitude Max", "Blink Opening Amplitude Max",
+  "Blink Closing Speed Max", "Blink Opening Speed Max",
+  ]
+
 init_blinks_number = [
   "Blinks Number",
   ]

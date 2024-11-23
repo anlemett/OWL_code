@@ -14,10 +14,11 @@ ET_DIR = os.path.join(DATA_DIR, "EyeTracking5")
 EEG_DIR = os.path.join(DATA_DIR, "EEG2")
 ML_DIR = os.path.join(DATA_DIR, "MLInput")
 
+#TIME_INTERVAL_DURATION = 300
 #TIME_INTERVAL_DURATION = 180
 #TIME_INTERVAL_DURATION = 60
-#TIME_INTERVAL_DURATION = 30
-TIME_INTERVAL_DURATION = 10
+TIME_INTERVAL_DURATION = 30
+#TIME_INTERVAL_DURATION = 10
 #TIME_INTERVAL_DURATION = 1
 
 WINDOW_SIZE = 250 * TIME_INTERVAL_DURATION
@@ -187,6 +188,9 @@ def get_TS_np(features):
 
     all_scores = np.array((all_WL_scores, all_Vig_scores, all_Stress_scores))
     return (TS_np, all_scores)
+
+
+print(f"Time interval: {TIME_INTERVAL_DURATION}")
 
 (TS_np, scores) = get_TS_np(features)
 

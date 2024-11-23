@@ -12,10 +12,11 @@ FIG_DIR = os.path.join(".", "Figures")
 
 CHS = False
 
-#TIME_INTERVAL_DURATION = 180
+#TIME_INTERVAL_DURATION = 300
+TIME_INTERVAL_DURATION = 180
 #TIME_INTERVAL_DURATION = 60
 #TIME_INTERVAL_DURATION = 30
-TIME_INTERVAL_DURATION = 10
+#TIME_INTERVAL_DURATION = 10
 #TIME_INTERVAL_DURATION = 1
 
 saccade_fixation_blink = [
@@ -107,12 +108,14 @@ def main():
     
     # Reshape the 2D array back to its original 3D shape
     # (number_of_timeintervals, TIME_INTERVAL_DURATION*250, number_of_features)
-
+    print(f"Time interval: {TIME_INTERVAL_DURATION}")
     print(TS_np.shape)
     if CHS:
         TS_np = TS_np.reshape((667, 45000, 38))
     else:
-        if TIME_INTERVAL_DURATION == 180:
+        if TIME_INTERVAL_DURATION == 300:
+            TS_np = TS_np.reshape((334, 75000, 38))
+        elif TIME_INTERVAL_DURATION == 180:
             TS_np = TS_np.reshape((605, 45000, 38))
         elif TIME_INTERVAL_DURATION == 60:
             #TS_np = TS_np.reshape((1766, 15000, 38))
@@ -121,7 +124,7 @@ def main():
             TS_np = TS_np.reshape((3616, 7500, 38))
         elif TIME_INTERVAL_DURATION == 10:
             TS_np = TS_np.reshape((10759, 2500, 38))
-        else:
+        else: # == 1
             TS_np = TS_np.reshape((97731, 250, 38))
     
     X_featurized = featurize_data(TS_np)

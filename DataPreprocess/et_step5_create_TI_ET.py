@@ -15,10 +15,11 @@ ET_DIR = os.path.join(DATA_DIR, "EyeTracking4")
 CH_DIR = os.path.join(DATA_DIR, "CH0_orig")
 OUTPUT_DIR = os.path.join(DATA_DIR, "EyeTracking5")
 
+TIME_INTERVAL_DURATION = 300
 #TIME_INTERVAL_DURATION = 180
 #TIME_INTERVAL_DURATION = 60
 #TIME_INTERVAL_DURATION = 30
-TIME_INTERVAL_DURATION = 10
+#TIME_INTERVAL_DURATION = 10
 #TIME_INTERVAL_DURATION = 1
 
 filenames = [["D1r1", "D1r2", "D1r3"],
@@ -145,11 +146,7 @@ for atco in filenames:
         
         ch_timestamps = scores_df['timestamp'].tolist()
         ch_first_timestamp = ch_timestamps[0]
-        
-        dif = first_timestamp - ch_first_timestamp
-        if dif>0:
-            ch_first_timestamp = first_timestamp
-            
+                   
         number_of_ch_timestamps = len(ch_timestamps)
         ch_last_timestamp = ch_first_timestamp + 180*(number_of_ch_timestamps-1)
         
@@ -161,7 +158,11 @@ for atco in filenames:
                        
         df = df[df['timeInterval']!=0]
         
+        print(f"len(df.index): {len(df.index)}")
+        
         number_of_time_intervals = max(df['timeInterval'].tolist())
+        print(f"Number of time intervals: {number_of_time_intervals}")
+        print(set(df['timeInterval'].tolist()))
                         
         SaccadesNumber = []
         SaccadesDurationMean = []
@@ -202,7 +203,14 @@ for atco in filenames:
             
             if ti_df.empty:
                 print(f"ti_df.dropna().empty, ti: {ti}")
-                continue            
+                continue
+            
+            ti_duration = len(ti_df.index) # first and last ti may be shorter than others
+            print(f"ti_duration: {ti_duration}")
+            
+            if ti_duration < TIME_INTERVAL_DURATION*250:
+                df = df[df['timeInterval']!=ti]
+                continue
             
             ti_saccades_df = ti_df[ti_df['Saccade']!=0]
             if ti_saccades_df.empty:
@@ -218,7 +226,7 @@ for atco in filenames:
 
             else:
                 saccades_set = set(ti_saccades_df['Saccade'].tolist())
-                saccades_number = len(saccades_set)
+                saccades_number = len(saccades_set)-1
                 saccades_duration = []
                 for saccade in saccades_set:
                     saccade_df = ti_df[ti_df['Saccade']==saccade]
@@ -281,7 +289,7 @@ for atco in filenames:
 
             else:
                 blinks_set = set(ti_blinks_df['Blink'].tolist())
-                blinks_number = len(blinks_set)
+                blinks_number = len(blinks_set)-1
                 blinks_duration = []
                 for blink in blinks_set:
                     blink_df = ti_df[ti_df['Blink']==blink]
@@ -298,31 +306,31 @@ for atco in filenames:
                 blinks_duration_min = min(blinks_duration)
                 blinks_duration_max = max(blinks_duration)
             
-            SaccadesNumber.extend([saccades_number]*TIME_INTERVAL_DURATION*250)
-            SaccadesDurationMean.extend([saccades_duration_mean]*TIME_INTERVAL_DURATION*250)
-            SaccadesDurationStd.extend([saccades_duration_std]*TIME_INTERVAL_DURATION*250)
-            SaccadesDurationMedian.extend([saccades_duration_median]*TIME_INTERVAL_DURATION*250)
-            SaccadesDurationQuantile25.extend([saccades_duration_quantile25]*TIME_INTERVAL_DURATION*250)
-            SaccadesDurationQuantile75.extend([saccades_duration_quantile25]*TIME_INTERVAL_DURATION*250)
-            SaccadesDurationMin.extend([saccades_duration_min]*TIME_INTERVAL_DURATION*250)
-            SaccadesDurationMax.extend([saccades_duration_max]*TIME_INTERVAL_DURATION*250)
+            SaccadesNumber.extend([saccades_number]*ti_duration)
+            SaccadesDurationMean.extend([saccades_duration_mean]*ti_duration)
+            SaccadesDurationStd.extend([saccades_duration_std]*ti_duration)
+            SaccadesDurationMedian.extend([saccades_duration_median]*ti_duration)
+            SaccadesDurationQuantile25.extend([saccades_duration_quantile25]*ti_duration)
+            SaccadesDurationQuantile75.extend([saccades_duration_quantile25]*ti_duration)
+            SaccadesDurationMin.extend([saccades_duration_min]*ti_duration)
+            SaccadesDurationMax.extend([saccades_duration_max]*ti_duration)
             
-            FixationDurationMean.extend([fixation_duration_mean]*TIME_INTERVAL_DURATION*250)
-            FixationDurationStd.extend([fixation_duration_std]*TIME_INTERVAL_DURATION*250)
-            FixationDurationMedian.extend([fixation_duration_median]*TIME_INTERVAL_DURATION*250)
-            FixationDurationQuantile25.extend([fixation_duration_quantile25]*TIME_INTERVAL_DURATION*250)
-            FixationDurationQuantile75.extend([fixation_duration_quantile25]*TIME_INTERVAL_DURATION*250)
-            FixationDurationMin.extend([fixation_duration_min]*TIME_INTERVAL_DURATION*250)
-            FixationDurationMax.extend([fixation_duration_max]*TIME_INTERVAL_DURATION*250)
+            FixationDurationMean.extend([fixation_duration_mean]*ti_duration)
+            FixationDurationStd.extend([fixation_duration_std]*ti_duration)
+            FixationDurationMedian.extend([fixation_duration_median]*ti_duration)
+            FixationDurationQuantile25.extend([fixation_duration_quantile25]*ti_duration)
+            FixationDurationQuantile75.extend([fixation_duration_quantile25]*ti_duration)
+            FixationDurationMin.extend([fixation_duration_min]*ti_duration)
+            FixationDurationMax.extend([fixation_duration_max]*ti_duration)
             
-            BlinksNumber.extend([blinks_number]*TIME_INTERVAL_DURATION*250)
-            BlinksDurationMean.extend([blinks_duration_mean]*TIME_INTERVAL_DURATION*250)
-            BlinksDurationStd.extend([blinks_duration_std]*TIME_INTERVAL_DURATION*250)
-            BlinksDurationMedian.extend([blinks_duration_median]*TIME_INTERVAL_DURATION*250)
-            BlinksDurationQuantile25.extend([blinks_duration_quantile25]*TIME_INTERVAL_DURATION*250)
-            BlinksDurationQuantile75.extend([blinks_duration_quantile25]*TIME_INTERVAL_DURATION*250)
-            BlinksDurationMin.extend([blinks_duration_min]*TIME_INTERVAL_DURATION*250)
-            BlinksDurationMax.extend([blinks_duration_max]*TIME_INTERVAL_DURATION*250)
+            BlinksNumber.extend([blinks_number]*ti_duration)
+            BlinksDurationMean.extend([blinks_duration_mean]*ti_duration)
+            BlinksDurationStd.extend([blinks_duration_std]*ti_duration)
+            BlinksDurationMedian.extend([blinks_duration_median]*ti_duration)
+            BlinksDurationQuantile25.extend([blinks_duration_quantile25]*ti_duration)
+            BlinksDurationQuantile75.extend([blinks_duration_quantile25]*ti_duration)
+            BlinksDurationMin.extend([blinks_duration_min]*ti_duration)
+            BlinksDurationMax.extend([blinks_duration_max]*ti_duration)
         
         
         df['SaccadesNumber'] = SaccadesNumber
