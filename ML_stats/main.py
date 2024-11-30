@@ -53,19 +53,19 @@ RANDOM_SEARCH = True
 LEFT_RIGHT_AVERAGE = False
 
 #MODEL = "SVC"
-#MODEL = "RF"
+MODEL = "RF"
 #MODEL = "BRF"
 #MODEL = "EEC"
-MODEL = "HGBC"
+#MODEL = "HGBC"
 
 N_ITER = 100
 N_SPLIT = 5
 SCORING = 'f1_macro'
 
 #TIME_INTERVAL_DURATION = 300
-TIME_INTERVAL_DURATION = 180
+#TIME_INTERVAL_DURATION = 180
 #TIME_INTERVAL_DURATION = 60
-#TIME_INTERVAL_DURATION = 30
+TIME_INTERVAL_DURATION = 30
 #TIME_INTERVAL_DURATION = 10
 
 class ThresholdLabelTransformer(BaseEstimator, TransformerMixin):
@@ -600,7 +600,7 @@ def main():
         print("EEG")
         full_filename = os.path.join(ML_DIR, "ML_ET_EEG_" + str(TIME_INTERVAL_DURATION) + "__EEG.csv")
 
-        scores_df = pd.read_csv(full_filename, sep=' ')
+        scores_df = pd.read_csv(full_filename, sep=' ', header=None)
         scores_np = scores_df.to_numpy()
         
         #scores_np = np.loadtxt(full_filename, delimiter=" ")

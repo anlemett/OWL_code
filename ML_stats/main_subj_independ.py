@@ -5,28 +5,30 @@ import time
 import os
 import numpy as np
 import pandas as pd
-#import sys
+import sys
 
 #from sklearn import preprocessing
 from scipy.stats import randint, uniform
 from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.pipeline import Pipeline
+#from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.base import BaseEstimator, TransformerMixin
 #from collections import Counter
-from sklearn.model_selection import ShuffleSplit, RandomizedSearchCV, KFold, StratifiedKFold
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV
+#from sklearn.model_selection import ShuffleSplit, KFold
+from sklearn.model_selection import StratifiedKFold
 
 from features import init, init_blinks, init_blinks_quantiles
 from features import init_blinks_no_head, init_blinks_no_head_quantiles
 
+from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline
+
 #columns_to_select = init
 columns_to_select = init_blinks_no_head
-#columns_to_select = init_blinks_no_head_quantiles
-#columns_to_select = init_blinks
-#columns_to_select = init_blinks_diam
-#columns_to_select = init_blinks_quantiles
 
 DATA_DIR = os.path.join("..", "..")
 DATA_DIR = os.path.join(DATA_DIR, "Data")
@@ -39,11 +41,14 @@ RANDOM_STATE = 0
 CHS = False
 BINARY = True
 
-TEST_ATCO = 4
+RANDOM_SEARCH = True
+TEST_ATCO = 2
+#[5, 6, 11, 17]
+#[2, 4, 7, 8, 9, 10, 12, 13, 14, 18]:
 
 #MODEL = "SVC"
-#MODEL = "RF"
-MODEL = "HGBC"
+MODEL = "RF"
+#MODEL = "HGBC"
 
 N_ITER = 100
 N_SPLIT = 5
@@ -97,20 +102,23 @@ class ThresholdLabelTransformer(BaseEstimator, TransformerMixin):
 # Function to perform parameter tuning with RandomizedSearchCV on each training fold
 def model_with_tuning(pipeline, X_train, y_train):
     
-    param_dist = get_param_dist()
+    params = get_params()
+    stratified_kfold = StratifiedKFold(n_splits=N_SPLIT, shuffle=True, random_state=RANDOM_STATE)
     
-    # Initialize RandomizedSearchCV with pipeline, parameter distribution, and inner CV
-    randomized_search = RandomizedSearchCV(
-        pipeline, param_dist, n_iter=N_ITER, cv=N_SPLIT, scoring=SCORING, n_jobs=-1, random_state=RANDOM_STATE
-    )
+    if RANDOM_SEARCH:
+        # Initialize RandomizedSearchCV with pipeline, parameter distribution, and inner CV
+        search = RandomizedSearchCV(
+            pipeline, params, n_iter=N_ITER, cv=N_SPLIT, scoring=SCORING, n_jobs=-1, random_state=RANDOM_STATE
+            )
     
-    print("before randomized_search.fit")
+    else:
+        search = GridSearchCV(estimator=pipeline, param_grid=params, scoring=SCORING, cv=stratified_kfold, n_jobs=-1)
+    print("before search.fit")
     # Fit on the training data for this fold
-    randomized_search.fit(X_train, y_train)
-    print("after randomized_search.fit")
-    
+    search.fit(X_train, y_train)
+    print("after search.fit")
     # Return the best estimator found in this fold
-    return randomized_search.best_estimator_
+    return search.best_estimator_
 
 def calculate_classwise_accuracies(y_pred, y_true):
     
@@ -158,11 +166,12 @@ def splitted_with_label_transform(pipeline, X_train, y_train, X_test, y_test):
                
     # Set class weights to the classifier
     pipeline.named_steps['classifier'].set_params(class_weight='balanced')
-    #if BINARY:
-    #    pipeline.named_steps['classifier'].set_params(class_weight={0: 1, 1: 1000})
-    #else:
-    #    pipeline.named_steps['classifier'].set_params(class_weight={0: 1, 1: 10, 2: 100})
-
+    '''
+    if BINARY:
+        pipeline.named_steps['classifier'].set_params(class_weight={1: 1, 2: 1000})
+    else:
+        pipeline.named_steps['classifier'].set_params(class_weight={1: 1, 2: 10, 3: 100})
+    '''
     # Get the best model after tuning on the current fold
     best_model = model_with_tuning(pipeline, X_train, y_train_transformed)
         
@@ -196,16 +205,47 @@ def get_model():
     else:
         return HistGradientBoostingClassifier(random_state=RANDOM_STATE)
     
-def get_param_dist():
+def get_params():
     if MODEL == "SVC":
-        param_dist = {
-            'classifier__C': uniform(loc=0, scale=10),  # Regularization parameter
-            'classifier__kernel': ['linear', 'poly', 'rbf', 'sigmoid'],  # Kernel type
-            'classifier__gamma': ['scale', 'auto'],  # Kernel coefficient
-            'classifier__degree': randint(1, 10)  # Degree of polynomial kernel
-            }
+        if RANDOM_SEARCH:
+            params = {
+                'classifier__C': uniform(loc=0, scale=10),  # Regularization parameter
+                'classifier__kernel': ['linear', 'poly', 'rbf', 'sigmoid'],  # Kernel type
+                'classifier__gamma': ['scale', 'auto'],  # Kernel coefficient
+                'classifier__degree': randint(1, 10)  # Degree of polynomial kernel
+                }
+        else:
+            params_grid = {
+                'classifier__C': [0.001, 0.01, 0.1, 1],
+                'classifier__kernel': ['linear', 'rbf'],
+                'classifier__gamma': ['scale', 0.1],
+                }
+            
+            params_set1 = {
+                'classifier__C': [0.1],
+                'classifier__kernel': ['linear'],
+                }
+            
+            params_set2 = {
+                'classifier__C': [0.01],
+                'classifier__kernel': ['rbf'],
+                'classifier__gamma': [0.1],
+                }
+            
+            params_set3 = {
+                'classifier__C': [0.001, 0.01, 1],
+                'classifier__kernel': ['linear', 'rbf'],
+                'classifier__gamma': ['scale'],
+                }
+            if TEST_ATCO in [2, 4, 7, 8, 9, 10, 12, 13, 14, 18]:
+                params = params_set2
+            elif TEST_ATCO in [5, 6, 11, 17]:
+                params = params_set3
+            else:
+                print(f"TEST_ATCO{TEST_ATCO} is not supported")
+                sys.exit(0)
     elif  MODEL == "RF":
-       param_dist = {
+       params = {
             'classifier__n_estimators': randint(50,500),
             'classifier__max_depth': randint(1,79),
              #'min_samples_split': randint(2, 40),
@@ -214,10 +254,10 @@ def get_param_dist():
              #'criterion': ['gini', 'entropy', 'log_loss']
             }
     else:
-        param_dist = {
+        params = {
              'classifier__max_depth': randint(1,79),
              }
-    return param_dist
+    return params
 
 def get_percentiles():
     if BINARY:
@@ -227,12 +267,6 @@ def get_percentiles():
         print(f"3 classes")
         return [0.52, 0.93]
     
-# Normalize features per ATCO
-def normalize_group(group):
-    scaler = StandardScaler()
-    group.iloc[:, 1:] = scaler.fit_transform(group.iloc[:, 1:])
-    return group
-
 
 def main():
     
@@ -261,31 +295,62 @@ def main():
         print(f"EEG")
         full_filename = os.path.join(ML_DIR, "ML_ET_EEG_" + str(TIME_INTERVAL_DURATION) + "__EEG.csv")
 
-        scores_df = pd.read_csv(full_filename, sep=' ')
+        scores_df = pd.read_csv(full_filename, sep=' ', header=None)
         scores_np = scores_df.to_numpy()
         
         #scores_np = np.loadtxt(full_filename, delimiter=" ")
     
         scores_np = scores_np[0,:] # Workload
     
-
     scores = list(scores_np)
+    
+    #print("Scores as they are read")
+    #print(scores)
     
     #Normalizing EEG per ATCO is probably wrong as not all the paricipants have
     #CHS response 4 and above, thus it would be wrong to take percentile for the high WL
-    #if not CHS:
-    #    data_df['score'] = scores
     
-    data_df = data_df.groupby('ATCO').apply(normalize_group).reset_index(drop=True)
+    if not CHS:
+        data_df['score'] = scores
     
+    #print("scores before normailization")
+    #print(scores)
     
-    data_df['score'] = scores
+    #Normalize labels per ATCO
+    '''
+    normalized_scores = data_df.groupby("ATCO")['score'].transform(lambda x: (x - x.min()) / (x.max() - x.min()))
+    print(normalized_scores)
+    data_df['score'] = normalized_scores
     
-    #data_df_train = data_df[data_df['ATCO']!=TEST_ATCO]
-    #data_df_test = data_df[data_df['ATCO']==TEST_ATCO]
-
-    data_df_train = data_df[(data_df['ATCO']!=TEST_ATCO)&(data_df['ATCO']!=(TEST_ATCO+1))&(data_df['ATCO']!=(TEST_ATCO+2))]
-    data_df_test = data_df[(data_df['ATCO']==TEST_ATCO)|(data_df['ATCO']==(TEST_ATCO+1))|(data_df['ATCO']==(TEST_ATCO+2))]
+    print("scores after normalization")
+    #print(data_df['score'].to_list())
+    #print(data_df.head())
+    '''
+    if CHS:
+        data_df['score'] = scores
+    
+    #data_df['score'] = scores
+    
+    data_df_train = data_df[data_df['ATCO']!=TEST_ATCO]
+    data_df_test = data_df[data_df['ATCO']==TEST_ATCO]
+    
+    '''
+    if TEST_ATCO in [2, 4, 7, 8, 9, 10, 12, 13, 14, 18]:
+        data_df_test = data_df[(data_df['ATCO']==TEST_ATCO)]
+        for i in range(1, 19):
+            if i not in [2, 4, 7, 8, 9, 10, 12, 13, 14, 18]:
+                data_df = data_df[data_df["ATCO"] != i]
+        data_df_train = data_df[data_df["ATCO"] != TEST_ATCO]
+    elif TEST_ATCO in [5, 6, 11, 17]:
+        data_df_test = data_df[(data_df['ATCO']==TEST_ATCO)]
+        for i in range(1, 19):
+            if i not in [5, 6, 11, 17]:
+                data_df = data_df[data_df["ATCO"] != i]
+        data_df_train = data_df[data_df["ATCO"] != TEST_ATCO]
+    else:
+        print(f"TEST_ATCO{TEST_ATCO} is not supported")
+        sys.exit(0)
+    '''
     
     print(f"Train data: {len(data_df_train.index)}")
     print(f"Test data: {len(data_df_test.index)}")
@@ -305,7 +370,8 @@ def main():
     
     y_train = np.array(scores_train)
     y_test = np.array(scores_test)
-
+    print("y_test")
+    print(y_test)
     
     ###########################################################################
     
@@ -319,11 +385,13 @@ def main():
     y_train = np.array(y_train)
    
     pipeline = Pipeline([
-            # Step 1: Standardize features
-            #('scaler', StandardScaler()),
-            # Step 2: Apply custom label transformation
+            # Standardize features
+            ('scaler', StandardScaler()),
+            # Apply custom label transformation
             ('label_transform', ThresholdLabelTransformer(get_percentiles())),
-            # Step 3: Choose the model
+            # Oversampling step
+            #('smote', SMOTE(random_state=RANDOM_STATE, k_neighbors=1)),
+            # Choose the model
             ('classifier', get_model())
             ])
             
