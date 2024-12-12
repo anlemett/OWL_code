@@ -469,7 +469,7 @@ def main():
         print("EEG")
         full_filename = os.path.join(ML_DIR, "ML_ET_EEG_" + str(TIME_INTERVAL_DURATION) + "__EEG.csv")
 
-        scores_df = pd.read_csv(full_filename, sep=' ')
+        scores_df = pd.read_csv(full_filename, sep=' ', header=None)
         scores_np = scores_df.to_numpy()
         
         #scores_np = np.loadtxt(full_filename, delimiter=" ")

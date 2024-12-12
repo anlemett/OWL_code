@@ -5,7 +5,7 @@ import os
 import numpy as np
 import pandas as pd
 import math
-from statistics import mean
+from statistics import mean, median
 #import sys
 
 DATA_DIR = os.path.join("..", "..")
@@ -14,8 +14,8 @@ EEG_DIR = os.path.join(DATA_DIR, "EEG1")
 CH_DIR = os.path.join(DATA_DIR, "CH0_orig")
 OUTPUT_DIR = os.path.join(DATA_DIR, "EEG2")
 
-TIME_INTERVAL_DURATION = 300
-#TIME_INTERVAL_DURATION = 180
+#TIME_INTERVAL_DURATION = 300
+TIME_INTERVAL_DURATION = 180
 #TIME_INTERVAL_DURATION = 60
 #TIME_INTERVAL_DURATION = 30
 #TIME_INTERVAL_DURATION = 10
@@ -92,18 +92,21 @@ for atco in filenames:
             ti_df = df[df['timeInterval']==ti]
             if ti_df.empty or ti_df.dropna().empty:
                  ti_wl_mean = np.nan
-                 ti_vig_mean = np.nan
-                 ti_stress_mean = np.nan
+                 ti_wl_median = np.nan
+                 #ti_vig_mean = np.nan
+                 #ti_stress_mean = np.nan
             else:
                 ti_wl_mean = mean(ti_df.dropna()['workload'].tolist())
-                ti_vig_mean = mean(ti_df.dropna()['vigilance'].tolist())
-                ti_stress_mean = mean(ti_df.dropna()['stress'].tolist())
+                ti_wl_median = median(ti_df.dropna()['workload'].tolist())
+                #ti_vig_mean = mean(ti_df.dropna()['vigilance'].tolist())
+                #ti_stress_mean = mean(ti_df.dropna()['stress'].tolist())
 
                 
             new_row = {'ATCO': atco_num, 'Run': run, 'timeInterval': ti,
                        'WorkloadMean': ti_wl_mean,
-                       'VigilanceMean': ti_vig_mean,
-                       'StressMean': ti_stress_mean,
+                       'WorkloadMedian': ti_wl_median,
+                       #'VigilanceMean': ti_vig_mean,
+                       #'StressMean': ti_stress_mean,
                        }
 
             ML_df = pd.concat([ML_df, pd.DataFrame([new_row])], ignore_index=True)
@@ -116,11 +119,11 @@ print("Total number of NaN values in DataFrame: ", total_nan_count)
 nan_count = ML_df['WorkloadMean'].isna().sum()
 print("Number of NaN values in WorkloadMean:", nan_count)
 
-nan_count = ML_df['VigilanceMean'].isna().sum()
-print("Number of NaN values in VigilanceMean:", nan_count)
+#nan_count = ML_df['VigilanceMean'].isna().sum()
+#print("Number of NaN values in VigilanceMean:", nan_count)
 
-nan_count = ML_df['StressMean'].isna().sum()
-print("Number of NaN values in StressMean:", nan_count)
+#nan_count = ML_df['StressMean'].isna().sum()
+#print("Number of NaN values in StressMean:", nan_count)
 
 full_filename = os.path.join(OUTPUT_DIR, "EEG_all_" + str (TIME_INTERVAL_DURATION) + ".csv")
 ML_df.to_csv(full_filename, sep=' ', encoding='utf-8', index = False, header = True)

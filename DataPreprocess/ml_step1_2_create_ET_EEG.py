@@ -15,9 +15,9 @@ EEG_DIR = os.path.join(DATA_DIR, "EEG2")
 ML_DIR = os.path.join(DATA_DIR, "MLInput")
 
 #TIME_INTERVAL_DURATION = 300
-#TIME_INTERVAL_DURATION = 180
+TIME_INTERVAL_DURATION = 180
 #TIME_INTERVAL_DURATION = 60
-TIME_INTERVAL_DURATION = 30
+#TIME_INTERVAL_DURATION = 30
 #TIME_INTERVAL_DURATION = 10
 #TIME_INTERVAL_DURATION = 1
 
@@ -59,8 +59,9 @@ def get_TS_np(features):
     TS_np = np.zeros(shape=(0, window_size, number_of_features))
     
     all_WL_scores = []
-    all_Vig_scores = []
-    all_Stress_scores = []
+    all_WL_median_scores = []
+    #all_Vig_scores = []
+    #all_Stress_scores = []
     
     #**************************************
     print("Reading Eye Tracking data")
@@ -126,8 +127,9 @@ def get_TS_np(features):
             
             run_TS_np = np.zeros(shape=(number_of_time_intervals, window_size, number_of_features))
             run_WL_scores = []
-            run_Vig_scores = []
-            run_Stress_scores = []
+            run_WL_median_scores = []
+            #run_Vig_scores = []
+            #run_Stress_scores = []
             
             print(f"Number of time intervals: {number_of_time_intervals}")
             dim1_idx = 0
@@ -145,8 +147,9 @@ def get_TS_np(features):
                     continue
 
                 ti_WL_score = eeg_ti_df.iloc[0]['WorkloadMean']
-                ti_Vig_score = eeg_ti_df.iloc[0]['VigilanceMean']
-                ti_Stress_score =eeg_ti_df.iloc[0]['StressMean']
+                ti_WL_median_score = eeg_ti_df.iloc[0]['WorkloadMedian']
+                #ti_Vig_score = eeg_ti_df.iloc[0]['VigilanceMean']
+                #ti_Stress_score =eeg_ti_df.iloc[0]['StressMean']
                 
                 dim2_idx = 0
                 for index, row in et_ti_df.iterrows():
@@ -156,8 +159,9 @@ def get_TS_np(features):
                     dim2_idx = dim2_idx + 1
                     
                 run_WL_scores.append(ti_WL_score)
-                run_Vig_scores.append(ti_Vig_score)
-                run_Stress_scores.append(ti_Stress_score)
+                run_WL_median_scores.append(ti_WL_median_score)
+                #run_Vig_scores.append(ti_Vig_score)
+                #run_Stress_scores.append(ti_Stress_score)
                         
                 dim1_idx = dim1_idx + 1
                 
@@ -179,14 +183,16 @@ def get_TS_np(features):
             print(f"TS_np.shape: {TS_np_shape}")
             
             all_WL_scores.extend(run_WL_scores)
-            all_Vig_scores.extend(run_Vig_scores)
-            all_Stress_scores.extend(run_Stress_scores)
+            all_WL_median_scores.extend(run_WL_median_scores)
+            #all_Vig_scores.extend(run_Vig_scores)
+            #all_Stress_scores.extend(run_Stress_scores)
             
             
     print(f"eeg_ti_empty_count: {eeg_ti_empty_count}")
     print(f"eeg_ti_WLMean_NA_count: {eeg_ti_WLMean_NA_count}")
 
-    all_scores = np.array((all_WL_scores, all_Vig_scores, all_Stress_scores))
+    #all_scores = np.array((all_WL_scores, all_Vig_scores, all_Stress_scores))
+    all_scores = np.array((all_WL_scores, all_WL_median_scores))
     return (TS_np, all_scores)
 
 
