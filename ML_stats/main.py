@@ -59,19 +59,19 @@ RANDOM_STATE = 0
 CHS = False
 BINARY = True
 
-SUBJECT_SPECIFIC = False
-ATCO = 17
+SUBJECT_SPECIFIC = True
+ATCO = 1
 
 RANDOM_SEARCH = True
 
 LEFT_RIGHT_AVERAGE = False
 
-MODEL = "LGBM"
+#MODEL = "LGBM"
 #MODEL = "SVC"
 #MODEL = "RF"
 #MODEL = "BRF"
 #MODEL = "EEC"
-#MODEL = "HGBC"
+MODEL = "HGBC"
 
 BOOTSTRAP = False
 N_ITER = 100
@@ -92,10 +92,10 @@ SCORING = 'f1_macro'
 
 
 #TIME_INTERVAL_DURATION = 300
-TIME_INTERVAL_DURATION = 180
+#TIME_INTERVAL_DURATION = 180
 #TIME_INTERVAL_DURATION = 60
 #TIME_INTERVAL_DURATION = 30
-#TIME_INTERVAL_DURATION = 10
+TIME_INTERVAL_DURATION = 10
 
 class ThresholdLabelTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, percentiles=None):
@@ -942,9 +942,9 @@ def main():
                 ('classifier', get_model())
                 ])
 
-        leave_one_out_with_label_transform(pipeline, X, y)
-        #outer_cv = StratifiedKFold(n_splits=N_SPLIT, shuffle=True, random_state=RANDOM_STATE)
-        #cross_val_stratified_with_label_transform(pipeline, X, y, cv=outer_cv)
+        #leave_one_out_with_label_transform(pipeline, X, y)
+        outer_cv = StratifiedKFold(n_splits=N_SPLIT, shuffle=True, random_state=RANDOM_STATE)
+        cross_val_stratified_with_label_transform(pipeline, X, y, cv=outer_cv)
     else:
         pipeline = Pipeline([
                 # Feature standartization step

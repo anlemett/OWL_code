@@ -34,6 +34,7 @@ from sklearn.metrics import precision_recall_curve
 import matplotlib.pyplot as plt
 
 from imblearn.ensemble import BalancedRandomForestClassifier, EasyEnsembleClassifier
+from sklearn.neighbors import KNeighborsClassifier
 from imblearn.over_sampling import SMOTE
 from imblearn.over_sampling import BorderlineSMOTE
 from imblearn.over_sampling import ADASYN
@@ -67,12 +68,13 @@ CHS = False
 BINARY = True
 
 RANDOM_SEARCH = True
-#TEST_ATCO = 1
+#TEST_ATCO = 4
 
 LEFT_RIGHT_AVERAGE = False
 
+MODEL = "KNN"
 #MODEL = "LGBM"
-MODEL = "SVC"
+#MODEL = "SVC"
 #MODEL = "RF"
 #MODEL = "BRF"
 #MODEL = "EEC"
@@ -233,8 +235,9 @@ def splitted_with_label_transform(pipeline, X_train, y_train, X_test, y_test):
         #y_test = np.array(y_transformed)[test_idx.astype(int)]
         
         # Set class weights to the classifier
-        pipeline.named_steps['classifier'].set_params(class_weight='balanced')
-        #pipeline.named_steps['classifier'].set_params(class_weight={1: 1, 2: 10})
+        if (MODEL != "KNN"):
+            pipeline.named_steps['classifier'].set_params(class_weight='balanced')
+            #pipeline.named_steps['classifier'].set_params(class_weight={1: 1, 2: 10})
 
         # Get the best model after tuning on the current fold
         best_model = model_with_tuning(pipeline, X_train, y_train_transformed)
@@ -291,6 +294,8 @@ def get_model():
     elif MODEL == "SVC":
         #return SVC(probability=True)
         return SVC()
+    elif MODEL == "KNN":
+        return KNeighborsClassifier()
     elif MODEL == "RF":
         return RandomForestClassifier(random_state=RANDOM_STATE, max_features=None)
     elif MODEL == "BRF":
@@ -333,6 +338,14 @@ def get_params():
                 'classifier__feature_fraction': [0.8, 1.0],
                 'classifier__bagging_fraction': [0.8, 1.0],
                 'classifier__bagging_freq': [0, 5]
+                }
+    elif MODEL == "KNN":
+        if RANDOM_SEARCH:
+            params = {
+                'classifier__n_neighbors': randint(2, 15),  # Randomly select n_neighbors between 2 and 15
+                'classifier__weights': ['uniform', 'distance'],  # Weight function used in prediction
+                'classifier__algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute'],  # Algorithm for nearest neighbor search
+                'classifier__metric': ['manhattan', 'canberra'],
                 }
     elif MODEL == "SVC":
         if RANDOM_SEARCH:
@@ -662,7 +675,7 @@ recalls = []
 f1_scores = []
 
 #for TEST_ATCO in [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18]:
-for TEST_ATCO in [2]:
+for TEST_ATCO in [3]:
     (accuracy, bal_accuracy, precision, recall, f1_macro) = main(TEST_ATCO)
     accuracies.append(accuracy)
     bal_accuracies.append(bal_accuracy)
